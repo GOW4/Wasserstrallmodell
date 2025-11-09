@@ -102,24 +102,29 @@ for i in range(MaxNum):
         odb = openOdb(path=job_name + '.odb', readOnly=True) #odb Ergebnisse datei
 
         # try to open the ODB and extract CPRESS; protect with exception handling
-        odb = None
         try:
-            odb = openOdb(path=job_name + '.odb', readOnly=False)
-            lastFrame = odb.steps['Step-{}'.format(i + 2)].frames[-1]
-            cpress_output_Data = lastFrame.fieldOutputs['CPRESS']
+            lastFrame = odb.steps['Step-%s'.format(i + 2)].frames[-1]
+            cpress_output_Data = lastFrame.fieldOutputs['CPRESS General_contact_Demain']
             topCenter_2 = odb.rootAssembly.nodesets[nodesetname]
             centerDisplacement = cpress_output_Data.getSubset(region=topCenter_2)
-
             num = len(centerDisplacement.values)
             multilist1 = [0] * num
             multilist2 = [0] * num
             j = 0
+
+
+
             for k in range(0, num):
-                val = centerDisplacement.values[k].data
-                if (val > 0) and (val <= 70):
+                a = centerDisplacement.values[k].data
+                if (a > 0) and (a <= 70):
                     multilist1[j] = centerDisplacement.values[k].nodeLabel
-                    multilist2[j] = val
+                    multilist2[j] = centerDisplacement.values[k].data
                     j += 1
+                else:
+                     j=j
+
+
+
 
             nozeronum = len(np.nonzero(multilist1)[0]) # Berechnen die Anzahl der nicht null Elemente in multilist1
             cpFile=open('workpiece_nodes_list.txt','w')
@@ -173,29 +178,25 @@ for i in range(MaxNum):
                 multilist[k][2]=node1.coordinates[2]
                 multilist[k][3]=1
 
-            model.AnalyticalField(name='AnalyticalField-1', description='', localCsys=None,
-                                  fieldType=SCALAR, pointData=multilist)
+#5根据数组multilist里数据，设置节点解析场AnalysisField-1,并且相对容差为1.5个单元长度，
+            mdb.models['Model-Restart-%s' format(i+1)].MappedField(name='AnalysisField-1',
+                description='', regionType=POINT, partLevelData=False, localCsys=None,
+                pointDataFormat=XYZ, fieldDataType=SCALAR, xyzPointData=multilist
+                neighborSearchTolerance=elementrange)
+        
+#把节点的解析场数据与对流换热边界条件关联
+#注意，这里是被切体数据，因此，有模型名称 'Model-Restart-%s' format(i+1) 表面集Surf-Selfcontact, 施加载荷步骤Step-%s'.format(i + 2)
+#解析场名称AnalysisField-1,对流换热系数h,环境温度sinkTempValue
+            a = mdb.models['Model-Restart-%s' format(i+1)].rootAssembly
+            region = a. surfaces[surfacename]
+            mdb.models['Model-Restart-%s' format(i+1)].FilmCondition(name='Int-workpiece',
+                createStepName='Step-%s'.format(i + 2), surface=region,definition=FIELD,
+                field='AnalysisField-1', filmCoeff=h, filmCoeffAmplitude='', 
+                sinkTemperature=sinktempu, sinkTempAmplitude='', sinkDistributionType=UNIFORM,
+                sinkFieldName='')
 
-            region = a_root.surfaces[surfacename]
-            # ensure film coefficient and sink temperature variables exist
-            filmCoeffValue = h
-            sinkTempValue = sinktemp
-            model.FilmCondition(name='Int-workpiece', createStepName='Step-{}'.format(i + 2),
-                                surface=region, definition=FIELD, field='AnalyticalField-1',
-                                filmCoeff=filmCoeffValue, filmCoeffAmplitude='',
-                                sinkTemperature=sinkTempValue, sinkAmplitude='',
-                                sinkDistributionType=UNIFORM, sinkFieldName='')
-
-        except Exception as e:
-            print('Warning: exception while processing {}: {}'.format(job_name, e))
-        finally:
-            try:
-                if odb is not None:
-                    odb.close()
-            except Exception:
-                pass
-
-        # 更新重启分析所需的模型、步骤和作业名称变量
-        lastModelName = new_model_name
-        lastStepName = 'Step-{}'.format(i + 2)
-        lastJobName = 'Restart-{}'.format(i + 1)
+        except:
+            pass
+        lastModelName = 'Model-Restart-%s'.format(i + 1)
+        lastStepName = 'Step-%s'.format(i + 2)
+        lastJobName = 'Restart-%s'.format(i + 1)
