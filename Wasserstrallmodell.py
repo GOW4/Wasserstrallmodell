@@ -130,16 +130,13 @@ for i in range(MaxNum):
             cpFile=open('workpiece_nodes_list.txt','w')
             for k in range(0,nozeronum):
                 cpFile.write("%30.0f\n"%(multilist1[k]))
-            else:
-                cpFile.close()
-
-
-
-
-
-
-
-            odb.close()
+            cpFile.close()
+        except Exception as e:
+            print('Error while processing ODB:', str(e))
+            if odb:
+                odb.close()
+            continue
+            
             
             #==========================节点坐标解析场办法===================    
             
