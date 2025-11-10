@@ -138,13 +138,12 @@ for i in range(MaxNum):
 
         try:
             nozeronum = len(np.nonzero(multilist1)[0]) # 计算非零元素数量 Berechnen die Anzahl der nicht null Elemente in multilist1
-            cpFile=open('workpiece_nodes_list.txt','w')
-            for k in range(0,nozeronum):
-                cpFile.write("%30.0f\n"%(multilist1[k]))
-            cpFile.close()
+            with open('workpiece_nodes_list.txt','w') as cpFile:
+                for k in range(0,nozeronum):
+                    cpFile.write("%30.0f\n" % (multilist1[k]))
         except Exception as e:
             print('Error while processing ODB:', str(e))
-            if odb:
+            if 'odb' in locals() and odb:
                 odb.close()
             continue
             
