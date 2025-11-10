@@ -125,10 +125,18 @@ for i in range(MaxNum):
                     j += 1
                 else:
                      j=j
+        except Exception as e:
+            print('Error extracting CPRESS from ODB:', str(e))
+            if odb:
+                try:
+                    odb.close()
+                except Exception:
+                    pass
+            continue
 
 
 
-
+        try:
             nozeronum = len(np.nonzero(multilist1)[0]) # 计算非零元素数量 Berechnen die Anzahl der nicht null Elemente in multilist1
             cpFile=open('workpiece_nodes_list.txt','w')
             for k in range(0,nozeronum):
